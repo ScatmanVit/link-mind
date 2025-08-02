@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Category {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  icon       String
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  userId     String   @unique @db.Uuid
+  User       User     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Marking {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @unique @db.Uuid
+  name      String   @db.VarChar
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  color     String   @db.VarChar
+  User      User     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Newsletter {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String   @unique @db.Uuid
+  interests  String
+  active     Boolean
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  User       User     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model State {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  name       String   @db.VarChar
+  color      String   @db.VarChar
+  userId     String   @unique @db.Uuid
+  User       User     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Tag {
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String        @unique @db.Uuid
+  name         String        @db.VarChar
+  color        String        @db.VarChar
+  created_at   DateTime      @default(now()) @db.Timestamptz(6)
+  User         User          @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Tags_Related Tags_Related?
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Tags_Related {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  tagId        String   @unique @db.Uuid
+  conteudoId   String   @db.VarChar
+  tipoConteudo String   @db.VarChar
+  Tag          Tag      @relation(fields: [tagId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model User {
+  id         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  email      String      @unique
+  password   String?
+  createdAt  DateTime    @default(now()) @db.Timestamptz(6)
+  google_id  String?      @unique
+  Category   Category?
+  Marking    Marking?
+  Newsletter Newsletter?
+  State      State?
+  Tag        Tag?
+}
