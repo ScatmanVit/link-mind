@@ -1,27 +1,25 @@
-import UserService from '../../services/public/public.routes.js'
-import captalize from "../../utils/utils.js"
-import bcrypt from 'bcrypt'
+import UserService from "../../services/public/public.routes.js"
+import { captalize, findOneUser } from "../../utils/utils.js"
+import bcrypt from "bcrypt"
 import jwt from 'jsonwebtoken'
 
 /* Implementar o caso de chegar um google_id */
 async function createUserController(req, res) {
-   const { name, email, password, google_id, type = "normal" } = req.body
-   if(type == "google"){
+   const { name, email, password, google_id } = req.body
+   if(google_id){
       if (!name || !email) {
-         return res.status(400).json({ message: "Dados não recebidos, por favor preencha todos os campos", type })
+         return res.status(400).json({ message: "Dados não recebidos, por favor preencha todos os campos" })
       }
    } else {
       if (!name || !email || !password) {
-         return res.status(400).json({ message: "Dados não recebidos, por favor preencha todos os campos", type })
+         return res.status(400).json({ message: "Dados não recebidos, por favor preencha todos os campos" })
       }
    }
 
-   let hashPassword
-   const salt = await bcrypt.genSalt(10);
-   if(type !== "google") {
-      if(password !== undefined) {
-         hashPassword = await bcrypt.hash(password, salt);
-      }
+   let hashPassword;
+   if (!google_id && password) {
+      const salt = await bcrypt.genSalt(10);
+      hashPassword = await bcrypt.hash(password, salt);
    }
    
    try {

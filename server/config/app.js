@@ -7,6 +7,6 @@ app.use(cors())
 app.use(express.json()) 
 
 // rotas futuramente aqui
-app.use('/link-mind', PublicRoutes)
+app.use('/linkmind', PublicRoutes)
 
 export default app
