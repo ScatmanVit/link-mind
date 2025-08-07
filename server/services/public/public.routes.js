@@ -15,6 +15,7 @@ async function createUserService(data) {
    return userCreated
 }
 
+
 export default {
    createUserService
 }
