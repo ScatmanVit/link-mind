@@ -6,7 +6,6 @@ import jwt from 'jsonwebtoken'
 
 const jwt_secret = process.env.JWT_SECRET
 
-/* Implementar o caso de chegar um google_id */
 async function createUserController(req, res) {
    const { name, email, password, google_id, id_token } = req.body
    
@@ -193,7 +192,7 @@ async function refreshTokenController(req, res) {
          if (!token_web) {
             return res.status(400).json({ message: "Token não fornecido para web." });
          }
-         token = token_web; // cookie já vem limpo
+         token = token_web; 
          decoded = jwt.verify(token, jwt_secret);
       }
 
@@ -226,8 +225,22 @@ async function refreshTokenController(req, res) {
          { expiresIn: "7d" }
       );
 
-      await redis.del(`refresh_token:${userId}`);
-      await redis.set(`refresh_token:${userId}`, refresh_token, "EX", 7 * 24 * 60 * 60);
+      try {
+         await redis.del(`refresh_token:${userId}`);
+      } catch(err) {
+         console.error("Erro no delete do token",err)
+          return res.status(500).json({
+            message: "Erro no servidor"
+         })
+      }
+      try{
+         await redis.set(`refresh_token:${userId}`, refresh_token, "EX", 7 * 24 * 60 * 60);
+      } catch(err){
+         console.error("Erro ao setar o novo token", err)
+         return res.status(500).json({
+            message: "Erro no servidor"
+         })
+      }
 
       if(platform === "mobile") {
         return res.status(200).json({
