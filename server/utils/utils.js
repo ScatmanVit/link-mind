@@ -28,13 +28,21 @@ export function formatEmail(email) {
       .toLowerCase()
 }
 
-export async function findOneUser(email) {
+export async function findOneUser(email, idUser) {
    let user
-   return user = await prisma.user.findUnique({
-      where: {
-         email: email
-      }
-   })
+   return (
+      user = email !== "" ? await prisma.user.findUnique({
+         where: {
+            email: email
+         }
+      }) : ( idUser !== "" 
+         && await prisma.user.findUnique({
+            where: {
+               id: idUser
+            }
+         }) 
+      ) 
+   ) 
 }
 
 export function captalize(word) {

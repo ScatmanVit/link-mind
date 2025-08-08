@@ -4,7 +4,6 @@ import { captalize, findOneUser, formatEmail, verifyGoogleToken, isValidJwt } fr
 import bcrypt from "bcrypt"
 import jwt from 'jsonwebtoken'
 
-
 const jwt_secret = process.env.JWT_SECRET
 
 /* Implementar o caso de chegar um google_id */
@@ -43,7 +42,7 @@ async function createUserController(req, res) {
    }
    
    try {
-      const userExist = await findOneUser(formatEmail(email))
+      const userExist = await findOneUser(formatEmail(email), "")
       if(userExist){
          return res.status(400).json({ 
             message: "Já existe um usuário cadastrado nesse email" 
@@ -106,7 +105,7 @@ async function loginUserController(req, res) {
       }
     }
 
-    const user = await findOneUser(formatEmail(email));
+    const user = await findOneUser(formatEmail(email), "");
     if (!user) {
       return res.status(400).json({ 
          message: "Não foi encontrado um usuário com esse E-mail" 
@@ -169,10 +168,97 @@ async function loginUserController(req, res) {
 
 
 async function refreshTokenController(req, res) {
+   const { userId, platform } = req.body
+   const token_mobile = req.headers.authorization
+   const token_web = req.cookies.access_token;
+   if(!["mobile", "web"].includes(platform)) {
+      return res.status(400).json({ 
+         message: "Plataforma inválida" 
+      });
+   }
+   
+   try {
+      let decoded;
+      let token;
 
+      if (platform === "mobile") {
+         if (!token_mobile) {
+            return res.status(400).json({ message: "Token não fornecido para mobile." });
+         }
+         token = token_mobile.replace("Bearer ", "");
+         decoded = jwt.verify(token, jwt_secret);
+      }
+
+      if (platform === "web") {
+         if (!token_web) {
+            return res.status(400).json({ message: "Token não fornecido para web." });
+         }
+         token = token_web; // cookie já vem limpo
+         decoded = jwt.verify(token, jwt_secret);
+      }
+
+      if (!decoded || !decoded.id) {
+         return res.status(401).json({ 
+            message: "Token inválido" 
+         });
+      }
+
+      const user = await findOneUser("", userId)
+      if(!user){
+         return res.status(400).json({
+            message: "Usuário não encontrado"
+         })
+      }
+
+      if (decoded.id !== userId) {
+         return res.status(403).json({
+            message: "ID do token não corresponde ao id usuário fornecido"
+         });
+      }
+      const access_token = jwt.sign(
+            { id: user.id, email: user.email },
+            jwt_secret,
+            { expiresIn: "1d" }
+         );
+      const refresh_token = jwt.sign(
+         { id: user.id, email: user.email },
+         jwt_secret,
+         { expiresIn: "7d" }
+      );
+
+      await redis.del(`refresh_token:${userId}`);
+      await redis.set(`refresh_token:${userId}`, refresh_token, "EX", 7 * 24 * 60 * 60);
+
+      if(platform === "mobile") {
+        return res.status(200).json({
+            message: "Sessão renovada com sucesso",
+            access_token,
+            refresh_token,
+         });
+      }
+
+      if(platform === "web") {
+         res.cookie("refresh_token", refresh_token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+         });
+         return res.status(200).json({
+            message: "Sessão renovada com sucesso",
+            access_token,
+         });
+      }
+   } catch(err) {
+      console.error("Erro no refresh_token [ REFRESH TOKEN ]", err)
+      return res.status(500).json({
+         message: "Erro no servidor"
+      })
+   }  
 }
 
 export default {
    createUserController,
-   loginUserController
+   loginUserController,
+   refreshTokenController
 }
