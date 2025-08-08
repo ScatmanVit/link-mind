@@ -179,7 +179,7 @@ async function refreshTokenController(req, res) {
    try {
       let decoded;
       let token;
-
+      
       if (platform === "mobile") {
          if (!token_mobile) {
             return res.status(400).json({ message: "Token não fornecido para mobile." });
